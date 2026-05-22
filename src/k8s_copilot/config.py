@@ -57,6 +57,12 @@ def load_config(config_path: Optional[Path] = None) -> Config:
     if path.exists():
         with open(path) as f:
             data = yaml.safe_load(f) or {}
+        if not isinstance(data, dict):
+            raise RuntimeError(
+                f"Config file {path} is not valid YAML mapping.\n"
+                "Each line must be:  key: value  (note the space after the colon).\n"
+                f"Got: {str(data)[:120]}"
+            )
         for key, value in data.items():
             if hasattr(cfg, key):
                 setattr(cfg, key, value)
