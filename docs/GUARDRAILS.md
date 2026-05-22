@@ -115,3 +115,63 @@ what the service account can see and do.
 | No per-session rate limiting | Runaway queries could hit Anthropic API limits | Add a per-session token budget in `config.py` |
 | `kubectl apply` not implemented | Cannot push arbitrary manifest changes — currently a gap and a guardrail | Add with a diff-preview approval step |
 | API key stored in plaintext config | Key exposure if config file is readable | Use a secrets manager or environment-only injection |
+
+---
+
+## Future Improvements
+
+### Security & Access Control
+- **Web UI authentication** — Add SSO/OAuth (Google, GitHub, Okta) to the Streamlit app
+  so only authorized engineers can access it. Short-term: put it behind Cloudflare Access
+  or an nginx reverse proxy with basic auth.
+- **Kubernetes RBAC service account** — Ship a `ClusterRole` manifest that grants only the
+  permissions K8sCopilot actually needs (get/list pods, deployments, nodes, events, logs).
+  When running in-cluster, bind this role to the pod's service account so it cannot read
+  Secrets or other sensitive resources.
+- **Namespace allowlist** — Config option to restrict which namespaces the agent can query.
+  Prevents accidental exposure of `kube-system` internals or other sensitive namespaces in
+  a multi-tenant cluster.
+- **Secrets masking** — Automatically redact values from Kubernetes Secrets if they appear
+  in describe/event output before sending to the LLM.
+
+### Write Operation Safety
+- **`kubectl apply` with diff preview** — Implement the missing apply tool with a mandatory
+  dry-run + diff step shown to the user before the real apply, similar to `terraform plan`
+  before `apply`.
+- **Two-person approval** — For high-risk write operations in production namespaces, require
+  a second engineer to confirm via a Slack message or a shared web UI button before
+  execution.
+- **Namespace-based write restrictions** — Allow writes in `staging` freely but require
+  stricter approval (or block entirely) in `prod` namespaces, configured via a policy file.
+- **Rollback awareness** — Before executing a scale or restart, capture the current state
+  (replica count, last deployed image) and log it so the engineer has a one-command undo
+  path.
+
+### Reliability & Cost Control
+- **Per-session token budget** — Add a configurable `max_tokens_per_session` cap so a
+  runaway interactive session cannot spend unbounded on the Anthropic API.
+- **Context window management** — Auto-summarize old turns when the conversation history
+  approaches the model's context limit, so long REPL sessions don't fail silently.
+- **Streaming responses** — Use the Anthropic streaming API so tool call progress and the
+  final answer appear token-by-token rather than waiting for the full response, improving
+  perceived speed during long investigations.
+- **Caching for read tools** — Cache read-only tool results (e.g. `get_pods`) for a short
+  TTL (10–30s) so repeated similar queries within a session don't hammer the Kubernetes API.
+
+### Observability & Audit
+- **Structured audit export** — Ship a script to push `audit.log` to common destinations:
+  CloudWatch Logs, Datadog, Splunk, or a Postgres table for team-wide query history.
+- **Session replay** — A CLI command (`k8s-copilot --replay <session_id>`) that prints the
+  full tool call sequence for a past session, useful for postmortem reconstruction.
+- **Metrics endpoint** — Expose a `/metrics` endpoint (Prometheus format) with counters for
+  queries, tool calls, approval rates, and error rates.
+
+### Developer Experience
+- **Plugin system for custom tools** — Allow teams to register their own read-only tools
+  (e.g. query an internal CMDB, fetch a Datadog dashboard URL) so the agent can pull
+  context from beyond the Kubernetes API.
+- **Multi-cluster support** — `--context` flag to target a specific kubeconfig context, and
+  a config option to name clusters (e.g. `prod-us-east`, `staging-eu`) so the agent can
+  be asked "compare pod counts between prod and staging".
+- **Slack / PagerDuty integration** — Trigger K8sCopilot investigations directly from a
+  Slack slash command during an incident, with results posted back to the channel.
