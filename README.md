@@ -99,6 +99,8 @@ K8sCopilot is designed for production-adjacent use. Three layers:
 2. **Approval gate on destructive operations.** When write tools (`scale`, `delete`, `apply`) are enabled via config, every invocation prints the exact action and prompts for confirmation before executing.
 3. **Audit log.** Every tool call (read or write) is written to a structured JSON log for review.
 
+For the full breakdown of guardrails, known gaps, and planned security improvements, see [docs/GUARDRAILS.md](docs/GUARDRAILS.md).
+
 ## Configuration
 
 `~/.k8s-copilot/config.yaml`:
