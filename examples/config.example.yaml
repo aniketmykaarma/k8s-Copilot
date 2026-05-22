@@ -1,0 +1,25 @@
+# Example K8sCopilot configuration.
+# Copy this to ~/.k8s-copilot/config.yaml and edit as needed.
+
+# Anthropic Claude model to use. Newer models are more capable but cost more.
+model: claude-sonnet-4-20250514
+
+# Maximum tokens Claude can output per response. 4096 is plenty for most queries.
+max_tokens: 4096
+
+# Cap on iterations of the tool-use loop. Protects against runaway sessions.
+max_tool_calls: 10
+
+# Truncate kubectl-style output to this many lines before sending to the LLM.
+# Saves tokens and prevents the agent from drowning in noise.
+max_output_lines: 50
+
+# Turn on write tools (scale/delete/apply). REQUIRES v0.4+ AND --confirm CLI flag.
+# Leave false in v0.3.
+enable_write_tools: false
+
+# Path to the JSONL audit log of all tool executions.
+log_path: ~/.k8s-copilot/audit.log
+
+# Optional: override the default kubeconfig path.
+# kubeconfig_path: ~/.kube/config-prod
