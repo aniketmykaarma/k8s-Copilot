@@ -3,6 +3,7 @@
 Run via:  k8s-copilot-web
 (or: streamlit run -m k8s_copilot.web_app)
 """
+from __future__ import annotations
 
 import streamlit as st
 
