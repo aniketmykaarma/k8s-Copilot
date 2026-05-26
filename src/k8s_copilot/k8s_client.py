@@ -215,6 +215,61 @@ class K8sClient:
 
         return _truncate(lines, self.max_lines)
 
+    def get_services(
+        self,
+        namespace: Optional[str] = None,
+        label_selector: Optional[str] = None,
+    ) -> str:
+        """List services with type, cluster IP, external IP, and ports."""
+        try:
+            if namespace:
+                resp = self.core.list_namespaced_service(
+                    namespace=namespace,
+                    label_selector=label_selector or "",
+                )
+            else:
+                resp = self.core.list_service_for_all_namespaces(
+                    label_selector=label_selector or "",
+                )
+        except ApiException as e:
+            return f"ERROR: {e.reason} (status {e.status})"
+
+        if not resp.items:
+            return "No services found."
+
+        lines = [
+            f"{'NAMESPACE':<20} {'NAME':<40} {'TYPE':<15} {'CLUSTER-IP':<18} {'EXTERNAL-IP':<20} {'PORTS':<25} {'AGE'}"
+        ]
+        for svc in resp.items:
+            ns = svc.metadata.namespace
+            name = svc.metadata.name
+            svc_type = svc.spec.type or "ClusterIP"
+            cluster_ip = svc.spec.cluster_ip or "<none>"
+
+            external_ips = []
+            if svc.status.load_balancer and svc.status.load_balancer.ingress:
+                for ing in svc.status.load_balancer.ingress:
+                    external_ips.append(ing.ip or ing.hostname or "")
+            elif svc.spec.external_i_ps:
+                external_ips = list(svc.spec.external_i_ps)
+            external_ip = ",".join(external_ips) if external_ips else "<none>"
+
+            ports = []
+            for p in svc.spec.ports or []:
+                port_str = f"{p.port}"
+                if p.node_port:
+                    port_str += f":{p.node_port}"
+                port_str += f"/{p.protocol}"
+                ports.append(port_str)
+            ports_str = ",".join(ports) or "<none>"
+
+            age = _age_short(svc.metadata.creation_timestamp)
+            lines.append(
+                f"{ns:<20} {name:<40} {svc_type:<15} {cluster_ip:<18} {external_ip:<20} {ports_str:<25} {age}"
+            )
+
+        return _truncate(lines, self.max_lines)
+
     # ------------------------------------------------------------------ #
     # WRITE TOOLS — only called after explicit human approval
     # ------------------------------------------------------------------ #
