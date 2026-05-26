@@ -135,6 +135,28 @@ READ_TOOLS: List[Dict[str, Any]] = [
         },
     },
     {
+        "name": "kubectl_get_services",
+        "description": (
+            "List services in the cluster with their type, ClusterIP, external IP, and ports. "
+            "Use to check how workloads are exposed — ClusterIP, NodePort, or LoadBalancer. "
+            "Set namespace=null to list services across ALL namespaces."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "namespace": {
+                    "type": ["string", "null"],
+                    "description": "Namespace to filter by. Null = all namespaces.",
+                },
+                "label_selector": {
+                    "type": ["string", "null"],
+                    "description": "Kubernetes label selector, e.g. 'app=orders'.",
+                },
+            },
+            "required": [],
+        },
+    },
+    {
         "name": "kubectl_get_events",
         "description": (
             "Get recent Kubernetes events, sorted newest first. Events show why pods are "

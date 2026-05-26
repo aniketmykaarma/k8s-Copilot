@@ -59,6 +59,7 @@ class Agent:
             "kubectl_get_deployments": self.k8s.get_deployments,
             "kubectl_get_nodes": self.k8s.get_nodes,
             "kubectl_get_events": self.k8s.get_events,
+            "kubectl_get_services": self.k8s.get_services,
         }
 
         self.tools = list(READ_TOOLS)
